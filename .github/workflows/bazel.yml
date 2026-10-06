@@ -1,0 +1,73 @@
+name: bazel
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      cold:
+        description: Ignore cached results for a cold build (results are still uploaded)
+        type: boolean
+        default: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: environment
+        env:
+          COLD: ${{ inputs.cold || false }}
+        run: |
+          {
+            echo "### Environment"
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Runner | ${{ runner.environment }} |"
+            echo "| OS | $(. /etc/os-release && echo "$PRETTY_NAME") |"
+            echo "| vCPU | $(nproc) |"
+            echo "| Memory | $(free -g | awk '/Mem:/{print $2}') GB |"
+            echo "| CPU | $(lscpu | sed -n 's/^Model name:[[:space:]]*//p') |"
+            echo "| Compiler | $(gcc --version | head -1) |"
+            echo "| Bazel | $(bazel --version) |"
+            echo "| Remote cache | $(grep -qs -- '--remote_cache' /etc/bazel.bazelrc && echo 'Blacksmith Bazel cache' || echo 'none') |"
+            echo "| Cold run | $COLD |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: bazel test
+        env:
+          COLD: ${{ inputs.cold || false }}
+        run: |
+          flags=(--execution_log_json_file=/tmp/exec.json)
+          if [ "$COLD" = "true" ]; then flags+=(--noremote_accept_cached); fi
+          start=$(date +%s)
+          bazel test //... "${flags[@]}" 2>&1 | tee /tmp/bazel.log
+          echo "BUILD_SECONDS=$(( $(date +%s) - start ))" >> "$GITHUB_ENV"
+
+      - name: collect test results
+        if: always()
+        run: |
+          mkdir -p test-results
+          find -L bazel-testlogs -name test.xml 2>/dev/null | while read -r f; do
+            name=$(dirname "${f#bazel-testlogs/}" | tr '/' '_')
+            cp "$f" "test-results/${name}.xml"
+          done
+          ls test-results
+
+      - name: summary
+        if: always()
+        run: |
+          {
+            echo "### Bazel"
+            echo "Build and test: ${BUILD_SECONDS:-n/a}s"
+            echo
+            echo '```'
+            grep -E 'INFO: [0-9]+ processes|INFO: Elapsed time|Executed [0-9]+ out of' /tmp/bazel.log || true
+            echo '```'
+            if [ -s /tmp/exec.json ]; then python3 tools/exec_summary.py /tmp/exec.json; fi
+          } >> "$GITHUB_STEP_SUMMARY"

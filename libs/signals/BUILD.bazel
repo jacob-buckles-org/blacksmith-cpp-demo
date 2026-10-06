@@ -1,0 +1,19 @@
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+
+cc_library(
+    name = "signals",
+    srcs = glob(["generated/*.cc"]),
+    hdrs = ["signal.h"],
+    visibility = ["//visibility:public"],
+    deps = ["//libs/marketdata"],
+)
+
+cc_test(
+    name = "signals_test",
+    srcs = ["signals_test.cc"],
+    deps = [
+        ":signals",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@googletest//:gtest_main",
+    ],
+)

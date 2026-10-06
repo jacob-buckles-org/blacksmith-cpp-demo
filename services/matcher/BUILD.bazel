@@ -1,0 +1,14 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+cc_binary(
+    name = "matcher",
+    srcs = ["main.cc"],
+    deps = [
+        "//libs/marketdata",
+        "//libs/orderbook",
+        "//libs/pricing",
+        "//libs/signals",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)

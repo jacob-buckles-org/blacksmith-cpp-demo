@@ -1,0 +1,17 @@
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+
+cc_library(
+    name = "pricing",
+    srcs = ["black_scholes.cc"],
+    hdrs = ["black_scholes.h"],
+    visibility = ["//visibility:public"],
+)
+
+cc_test(
+    name = "black_scholes_test",
+    srcs = ["black_scholes_test.cc"],
+    deps = [
+        ":pricing",
+        "@googletest//:gtest_main",
+    ],
+)

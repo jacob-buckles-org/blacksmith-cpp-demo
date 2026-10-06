@@ -1,0 +1,23 @@
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+
+cc_library(
+    name = "risk",
+    srcs = ["limits.cc"],
+    hdrs = ["limits.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//libs/marketdata",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "limits_test",
+    srcs = ["limits_test.cc"],
+    deps = [
+        ":risk",
+        "@googletest//:gtest_main",
+    ],
+)

@@ -1,0 +1,25 @@
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+
+cc_library(
+    name = "marketdata",
+    srcs = ["feed_parser.cc"],
+    hdrs = [
+        "feed_parser.h",
+        "types.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "feed_parser_test",
+    srcs = ["feed_parser_test.cc"],
+    deps = [
+        ":marketdata",
+        "@googletest//:gtest_main",
+    ],
+)

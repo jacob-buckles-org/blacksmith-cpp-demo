@@ -1,0 +1,56 @@
+name: cmake
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install tools
+        run: command -v ninja || (sudo apt-get update && sudo apt-get install -y ninja-build)
+
+      - name: configure
+        run: |
+          start=$(date +%s)
+          cmake -S . -B build -G Ninja
+          echo "CONFIGURE_SECONDS=$(( $(date +%s) - start ))" >> "$GITHUB_ENV"
+
+      - name: build
+        run: |
+          start=$(date +%s)
+          cmake --build build -j"$(nproc)"
+          echo "BUILD_SECONDS=$(( $(date +%s) - start ))" >> "$GITHUB_ENV"
+
+      - name: test
+        run: |
+          start=$(date +%s)
+          mkdir -p test-results
+          ctest --test-dir build --output-on-failure --output-junit "$GITHUB_WORKSPACE/test-results/ctest.xml"
+          echo "TEST_SECONDS=$(( $(date +%s) - start ))" >> "$GITHUB_ENV"
+
+      - name: summary
+        if: always()
+        run: |
+          {
+            echo "### CMake"
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Runner | ${{ runner.environment }} |"
+            echo "| OS | $(. /etc/os-release && echo "$PRETTY_NAME") |"
+            echo "| vCPU | $(nproc) |"
+            echo "| CPU | $(lscpu | sed -n 's/^Model name:[[:space:]]*//p') |"
+            echo "| Compiler | $(gcc --version | head -1) |"
+            echo "| CMake | $(cmake --version | head -1) |"
+            echo "| Configure (incl. dependency fetch) | ${CONFIGURE_SECONDS:-n/a}s |"
+            echo "| Build | ${BUILD_SECONDS:-n/a}s |"
+            echo "| Test | ${TEST_SECONDS:-n/a}s |"
+          } >> "$GITHUB_STEP_SUMMARY"
