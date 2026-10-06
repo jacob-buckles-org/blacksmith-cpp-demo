@@ -7,6 +7,7 @@
 namespace risk {
 
 absl::Status RiskChecker::CheckOrder(const marketdata::Order& order) const {
+  if (order.qty <= 0) return absl::InvalidArgumentError("order qty must be positive");
   auto it = limits_.find(order.symbol);
   if (it == limits_.end()) return absl::FailedPreconditionError(absl::StrCat("no limits for ", order.symbol));
   const Limits& l = it->second;
