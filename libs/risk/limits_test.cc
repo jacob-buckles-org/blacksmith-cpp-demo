@@ -19,6 +19,13 @@ TEST(Risk, RejectsUnknownSymbol) {
   EXPECT_FALSE(r.CheckOrder(Buy(1)).ok());
 }
 
+TEST(Risk, RejectsNonPositiveQty) {
+  RiskChecker r;
+  r.SetLimits("ESZ6", Limits{10, 5});
+  EXPECT_FALSE(r.CheckOrder(Buy(0)).ok());
+  EXPECT_FALSE(r.CheckOrder(Buy(-3)).ok());
+}
+
 TEST(Risk, EnforcesOrderAndPositionLimits) {
   RiskChecker r;
   r.SetLimits("ESZ6", Limits{10, 5});
