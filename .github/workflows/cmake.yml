@@ -9,19 +9,34 @@ defaults:
   run:
     shell: bash
 
+env:
+  CCACHE_DIR: /home/runner/.ccache
+  CCACHE_BASEDIR: ${{ github.workspace }}
+  CCACHE_NOHASHDIR: "true"
+  CCACHE_COMPILERCHECK: content
+  CCACHE_MAXSIZE: 10G
+
 jobs:
   build:
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v4
 
+      - uses: useblacksmith/stickydisk@v1
+        with:
+          key: ${{ github.repository }}-ccache-gcc-x64-release
+          path: /home/runner/.ccache
+
       - name: install tools
-        run: command -v ninja || (sudo apt-get update && sudo apt-get install -y ninja-build)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build ccache
+          ccache -z
 
       - name: configure
         run: |
           start=$(date +%s)
-          cmake -S . -B build -G Ninja
+          cmake -S . -B build -G Ninja -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           echo "CONFIGURE_SECONDS=$(( $(date +%s) - start ))" >> "$GITHUB_ENV"
 
       - name: build
@@ -53,4 +68,8 @@ jobs:
             echo "| Configure (incl. dependency fetch) | ${CONFIGURE_SECONDS:-n/a}s |"
             echo "| Build | ${BUILD_SECONDS:-n/a}s |"
             echo "| Test | ${TEST_SECONDS:-n/a}s |"
+            echo
+            echo '```'
+            ccache -s || true
+            echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
