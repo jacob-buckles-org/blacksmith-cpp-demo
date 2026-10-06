@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <cstdint>
 #include <string>
 
@@ -11,7 +12,7 @@ struct Price {
   static constexpr int64_t kTicksPerUnit = 10000;
   int64_t ticks = 0;
 
-  static Price FromDouble(double v) { return Price{static_cast<int64_t>(v * kTicksPerUnit + (v >= 0 ? 0.5 : -0.5))}; }
+  static Price FromDouble(double v) { return Price{static_cast<int64_t>(std::llround(v * kTicksPerUnit))}; }
   double ToDouble() const { return static_cast<double>(ticks) / kTicksPerUnit; }
 
   friend bool operator<(Price a, Price b) { return a.ticks < b.ticks; }
